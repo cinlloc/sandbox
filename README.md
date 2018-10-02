@@ -1,2 +1,2 @@
 # sandbox
-Sandbox repository for various experimentations
+Sandbox repository for various experimentations.
