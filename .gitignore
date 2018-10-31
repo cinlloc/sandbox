@@ -1,3 +1,7 @@
+java/testgwtmockito/*.iml
+java/testgwtmockito/.idea/**
+java/testgwtmockito/target/**
+
 *.class
 
 # Mobile Tools for Java (J2ME)
