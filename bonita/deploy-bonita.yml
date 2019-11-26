@@ -1,0 +1,51 @@
+---
+- hosts: localhost
+  vars:
+    workdir: "{{ playbook_dir }}"
+    archive: "{{ workdir }}/BonitaCommunity-7.9.4-tomcat.zip"
+    installdir: "{{ workdir }}/BonitaCommunity-7.9.4-tomcat"
+  tasks:
+  - set_fact: password="{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+  - name: Check Bonita Tomcat bundle installed
+    stat:
+      path: "{{ installdir }}"
+    register: bonita_dir
+  - name: Stop Bonita Tomcat bundle
+    shell:
+      chdir: "{{ installdir }}"
+      cmd: "{{ installdir }}/stop-bonita.sh"
+    when: bonita_dir.stat.exists == true
+  - name: Remove Bonita Tomcat bundle
+    file:
+      state: absent
+      path: "{{ installdir }}/"
+    when: bonita_dir.stat.exists == true
+  - name: Extract {{ archive }} into {{ workdir }}
+    unarchive:
+      src: "{{ archive }}"
+      dest: "{{ workdir }}"
+  - name: Uncomment default 'install' username for tenant (server side)
+    replace:
+      path: "{{ installdir }}/setup/platform_conf/initial/tenant_template_engine/bonita-tenant-community-custom.properties"
+      regexp: '^#(userName=install)$'
+      replace: '\1'
+  - name: Replace default 'install' password for tenant (server side)
+    replace:
+      path: "{{ installdir }}/setup/platform_conf/initial/tenant_template_engine/bonita-tenant-community-custom.properties"
+      after: 'userName=install'
+      regexp: '^#?(userPassword=).+$'
+      replace: '\1{{ password }}'
+  - name: Replace default 'install' password for tenant (portal side)
+    replace:
+      path: "{{ installdir }}/setup/platform_conf/initial/platform_portal/platform-tenant-config.properties"
+      after: 'platform.tenant.default.username=install'
+      regexp: '^(platform.tenant.default.password=).+$'
+      replace: '\1{{ password }}'
+  - name: Start Bonita Tomcat bundle
+    shell:
+      chdir: "{{ installdir }}"
+      cmd: "yes | {{ installdir }}/start-bonita.sh"
+  - name: Check Bonita Portal accessibility at http://{{ inventory_hostname }}:8080/bonita
+    wait_for:
+      port: 8080
+      timeout: 60
