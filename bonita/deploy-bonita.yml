@@ -4,6 +4,10 @@
     workdir: "{{ playbook_dir }}"
     archive: "{{ workdir }}/BonitaCommunity-7.9.4-tomcat.zip"
     installdir: "{{ workdir }}/BonitaCommunity-7.9.4-tomcat"
+  vars_prompt:
+    - name: usermail
+      prompt: "What is the email address of the user you want to notify when deployment is done?"
+      private: no
   tasks:
   - set_fact: password="{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
   - name: Check Bonita Tomcat bundle installed
@@ -49,3 +53,16 @@
     wait_for:
       port: 8080
       timeout: 60
+  - name: Sending Bonita credentials to user email
+    mail:
+      host: smtp.gmail.com
+      port: 587
+      from: noreply@bonitasoft.com
+      username: foo@gmail.com
+      password: foogmailpassword
+      to: "{{ usermail }}"
+      subject: Bonita CE up and running on {{ inventory_hostname }}
+      body: Your bonita instance is accessible at http://{{ inventory_hostname }}:8080/bonita with credentials install / {{ password }}
+      secure: starttls
+      charset: utf-8
+
